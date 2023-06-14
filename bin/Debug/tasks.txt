@@ -1,0 +1,474 @@
+(Id INTEGER PRIMARY KEY AUTOINCREMENT, Login TEXT, Password TEXT, Name TEXT, Position TEXT)";
+
+
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using System.IO;
+using System.Data.SQLite;
+using SimpleWindowsForm;
+
+
+
+namespace SimpleWindowsForm
+
+{
+    public class DatabaseManager
+    {
+        private SQLiteConnection connection;
+
+        public DatabaseManager()
+        {
+            connection = new SQLiteConnection("Data Source=Task.db;Version=3;");
+        }
+
+        public void CreateTaskTable()
+        {
+            connection.Open();
+
+            string createTableQuery = "CREATE TABLE IF NOT EXISTS Task (Id INTEGER PRIMARY KEY AUTOINCREMENT, TaskText TEXT, Urgency TEXT, DueDate TEXT)";
+            SQLiteCommand command = new SQLiteCommand(createTableQuery, connection);
+            command.ExecuteNonQuery();
+
+            connection.Close();
+        }
+
+        public void CreateEmployeesTable()
+        {
+            connection.Open();
+
+            string createTableQuery = "CREATE TABLE IF NOT EXISTS Employees (Id INTEGER PRIMARY KEY AUTOINCREMENT, Login TEXT, Name TEXT, Position TEXT)";
+            SQLiteCommand command = new SQLiteCommand(createTableQuery, connection);
+            command.ExecuteNonQuery();
+
+            connection.Close();
+        }
+    }
+    public class MainForm : Form
+    {
+        private DatabaseManager databaseManager;
+        //private SQLiteConnection connection;
+        private Button loginButton;
+        private TextBox usernameTextBox;
+        private TextBox passwordTextBox;
+        private ListBox itemListBox;
+        private TextBox newTaskTextBox;
+        private DataGridView taskDataGridView;
+        private Button addTaskButton;
+        private ComboBox urgencyComboBox;
+        private DateTimePicker dueDateTimePicker;
+        private DataGridView employeeDataGridView;
+        private TextBox newEmployeeLoginTextBox;
+        private TextBox newEmployeePasswordTextBox;
+        private TextBox newEmployeeNameTextBox;
+        private TextBox newEmployeePositionTextBox;
+        private Button addEmployeeButton;
+
+        // Белый список пользователей и паролей
+        private Dictionary<string, string> whitelist = new Dictionary<string, string>()
+        {
+            { "123", "123" }
+        };
+
+        // Счетчик для нумерации задач
+        private int taskCounter = 1;
+
+        public MainForm()
+        {
+
+            databaseManager = new DatabaseManager();
+            databaseManager.CreateTaskTable();
+            databaseManager.CreateEmployeesTable();
+
+            // Настройки главной формы
+            Text = "Простая Windows-форма";
+            Width = 800;
+            Height = 600;
+
+            // Создание кнопки "Войти"
+            loginButton = new Button();
+            loginButton.Text = "Войти";
+            loginButton.Width = 100;
+            loginButton.Height = 30;
+            loginButton.Left = (Width - loginButton.Width) / 2;
+            loginButton.Top = (Height - loginButton.Height) / 2;
+
+            // Добавление кнопки на форму
+            Controls.Add(loginButton);
+
+            // Подключение обработчика события нажатия на кнопку "Войти"
+            loginButton.Click += LoginButton_Click;
+
+            // Подключение обработчика событий сочетаний клавиш
+            KeyDown += MainForm_KeyDown;
+        }
+
+        private void LoginButton_Click(object sender, EventArgs e)
+        {
+            // Создание и настройка полей для ввода имени пользователя и пароля
+            usernameTextBox = new TextBox();
+            usernameTextBox.Width = 200;
+            usernameTextBox.Left = (Width - usernameTextBox.Width) / 2;
+            usernameTextBox.Top = loginButton.Top + loginButton.Height + 10;
+
+            passwordTextBox = new TextBox();
+            passwordTextBox.Width = 200;
+            passwordTextBox.Left = (Width - passwordTextBox.Width) / 2;
+            passwordTextBox.Top = usernameTextBox.Top + usernameTextBox.Height + 10;
+            passwordTextBox.PasswordChar = '*'; // Замените символом, отображающим пароль
+
+            // Добавление полей на форму
+            Controls.Add(usernameTextBox);
+            Controls.Add(passwordTextBox);
+
+            // Подключение обработчика события нажатия на кнопку "Войти" после ввода данных
+            loginButton.Click -= LoginButton_Click;
+            loginButton.Click += LoginButtonWithCredentials_Click;
+            loginButton.Text = "Войти с учетными данными";
+        }
+
+        private void LoginButtonWithCredentials_Click(object sender, EventArgs e)
+        {
+            string username = usernameTextBox.Text;
+            string password = passwordTextBox.Text;
+
+            if (whitelist.ContainsKey(username) && whitelist[username] == password)
+            {
+                // Удаление полей для ввода имени пользователя и пароля
+                Controls.Remove(usernameTextBox);
+                Controls.Remove(passwordTextBox);
+
+                // Удаление кнопки "Войти"
+                Controls.Remove(loginButton);
+
+                // Создание и настройка текстового поля и кнопки для добавления задачи
+                newTaskTextBox = new TextBox();
+                newTaskTextBox.Width = 200;
+                newTaskTextBox.Left = (Width - newTaskTextBox.Width) / 2;
+                newTaskTextBox.Top = 100;
+
+                urgencyComboBox = new ComboBox();
+                urgencyComboBox.Items.AddRange(new string[] { "Низкий", "Средний", "Высокий" });
+                urgencyComboBox.Width = 100;
+                urgencyComboBox.Left = (Width - urgencyComboBox.Width) / 2;
+                urgencyComboBox.Top = newTaskTextBox.Top + newTaskTextBox.Height + 10;
+
+                dueDateTimePicker = new DateTimePicker();
+                dueDateTimePicker.Format = DateTimePickerFormat.Custom;
+                dueDateTimePicker.CustomFormat = "dd.MM.yyyy HH:mm";
+                dueDateTimePicker.Width = 150;
+                dueDateTimePicker.Left = (Width - dueDateTimePicker.Width) / 2;
+                dueDateTimePicker.Top = urgencyComboBox.Top + urgencyComboBox.Height + 10;
+
+                addTaskButton = new Button();
+                addTaskButton.Text = "Добавить задачу";
+                addTaskButton.Width = 150;
+                addTaskButton.Left = (Width - addTaskButton.Width) / 2;
+                addTaskButton.Top = dueDateTimePicker.Top + dueDateTimePicker.Height + 10;
+
+                // Подключение обработчика события нажатия на кнопку "Добавить задачу"
+                addTaskButton.Click += AddTaskButton_Click;
+
+                // Добавление элементов на форму
+                Controls.Add(newTaskTextBox);
+                Controls.Add(urgencyComboBox);
+                Controls.Add(dueDateTimePicker);
+                Controls.Add(addTaskButton);
+
+                // Создание таблицы для отображения списка задач
+                taskDataGridView = new DataGridView();
+                taskDataGridView.Width = 400;
+                taskDataGridView.Height = 300;
+                taskDataGridView.Left = (Width - taskDataGridView.Width) / 2;
+                taskDataGridView.Top = addTaskButton.Top + addTaskButton.Height + 10;
+                taskDataGridView.AutoGenerateColumns = false;
+
+                // Создание столбцов таблицы
+                DataGridViewTextBoxColumn taskNumberColumn = new DataGridViewTextBoxColumn();
+                taskNumberColumn.Name = "TaskNumber";
+                taskNumberColumn.HeaderText = "№";
+                taskNumberColumn.Width = 30;
+                DataGridViewTextBoxColumn taskUrgencyColumn = new DataGridViewTextBoxColumn();
+                taskUrgencyColumn.Name = "TaskUrgency";
+                taskUrgencyColumn.HeaderText = "Приоритет";
+                taskUrgencyColumn.Width = 80;
+                DataGridViewTextBoxColumn taskTextColumn = new DataGridViewTextBoxColumn();
+                taskTextColumn.Name = "TaskText";
+                taskTextColumn.HeaderText = "Задача";
+                taskTextColumn.Width = 200;
+                DataGridViewTextBoxColumn taskDueDateColumn = new DataGridViewTextBoxColumn();
+                taskDueDateColumn.Name = "TaskDueDate";
+                taskDueDateColumn.HeaderText = "Срок выполнения";
+                taskDueDateColumn.Width = 120;
+
+                // Добавление столбцов в таблицу
+                taskDataGridView.Columns.Add(taskNumberColumn);
+                taskDataGridView.Columns.Add(taskUrgencyColumn);
+                taskDataGridView.Columns.Add(taskTextColumn);
+                taskDataGridView.Columns.Add(taskDueDateColumn);
+
+                // Добавление DataGridView на форму
+                Controls.Add(taskDataGridView);
+
+                // Создание таблицы для отображения списка сотрудников
+                employeeDataGridView = new DataGridView();
+                employeeDataGridView.Width = 400;
+                employeeDataGridView.Height = 200;
+                employeeDataGridView.Left = taskDataGridView.Right + 50;
+                employeeDataGridView.Top = taskDataGridView.Top;
+                employeeDataGridView.AutoGenerateColumns = false;
+
+                // Создание столбцов таблицы
+                DataGridViewTextBoxColumn loginColumn = new DataGridViewTextBoxColumn();
+                loginColumn.Name = "Login";
+                loginColumn.HeaderText = "Логин";
+                loginColumn.Width = 100;
+                DataGridViewTextBoxColumn nameColumn = new DataGridViewTextBoxColumn();
+                nameColumn.Name = "Name";
+                nameColumn.HeaderText = "Имя";
+                nameColumn.Width = 150;
+                DataGridViewTextBoxColumn positionColumn = new DataGridViewTextBoxColumn();
+                positionColumn.Name = "Position";
+                positionColumn.HeaderText = "Должность";
+                positionColumn.Width = 150;
+
+                // Добавление столбцов в таблицу
+                employeeDataGridView.Columns.Add(loginColumn);
+                employeeDataGridView.Columns.Add(nameColumn);
+                employeeDataGridView.Columns.Add(positionColumn);
+
+                // Создание полей для добавления нового сотрудника
+                newEmployeeLoginTextBox = new TextBox();
+                newEmployeeLoginTextBox.Width = 150;
+                newEmployeeLoginTextBox.Left = employeeDataGridView.Left;
+                newEmployeeLoginTextBox.Top = employeeDataGridView.Bottom + 10;
+
+                newEmployeePasswordTextBox = new TextBox();
+                newEmployeePasswordTextBox.Width = 150;
+                newEmployeePasswordTextBox.Left = employeeDataGridView.Left;
+                newEmployeePasswordTextBox.Top = newEmployeeLoginTextBox.Bottom + 10;
+                newEmployeePasswordTextBox.PasswordChar = '*'; // прячем пароль
+
+                newEmployeeNameTextBox = new TextBox();
+                newEmployeeNameTextBox.Width = 150;
+                newEmployeeNameTextBox.Left = employeeDataGridView.Left;
+                newEmployeeNameTextBox.Top = newEmployeePasswordTextBox.Bottom + 10;
+
+                newEmployeePositionTextBox = new TextBox();
+                newEmployeePositionTextBox.Width = 150;
+                newEmployeePositionTextBox.Left = employeeDataGridView.Left;
+                newEmployeePositionTextBox.Top = newEmployeeNameTextBox.Bottom + 10;
+
+                // Создание кнопки "Добавить сотрудника"
+                addEmployeeButton = new Button();
+                addEmployeeButton.Text = "Добавить сотрудника";
+                addEmployeeButton.Width = 150;
+                addEmployeeButton.Height = 30;
+                addEmployeeButton.Left = newEmployeePositionTextBox.Left;
+                addEmployeeButton.Top = newEmployeePositionTextBox.Bottom + 10;
+
+                // Добавление элементов на форму
+                Controls.Add(itemListBox);
+                Controls.Add(newTaskTextBox);
+                Controls.Add(addTaskButton);
+                Controls.Add(urgencyComboBox);
+                Controls.Add(dueDateTimePicker);
+                Controls.Add(employeeDataGridView);
+                Controls.Add(newEmployeeLoginTextBox);
+                Controls.Add(newEmployeePasswordTextBox);
+                Controls.Add(newEmployeeNameTextBox);
+                Controls.Add(newEmployeePositionTextBox);
+                Controls.Add(addEmployeeButton);
+
+                // Подключение обработчиков событий для кнопок
+                //addTaskButton.Click += AddTaskButton_Click;
+                addEmployeeButton.Click += AddEmployeeButton_Click;
+
+                // Загрузка сотрудников из файла
+                LoadEmployees();
+
+            }
+            else
+            {
+                MessageBox.Show("Неверное имя пользователя или пароль.");
+            }
+        }
+
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                Close();
+            }
+        }
+
+        private void InsertTaskIntoDatabase(string taskText, string urgency, DateTime dueDate)
+        {
+            string query = "INSERT INTO Tasks (TaskText, Urgency, DueDate) VALUES (@TaskText, @Urgency, @DueDate)";
+
+
+            using (SQLiteCommand command = new SQLiteCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@TaskText", taskText);
+                command.Parameters.AddWithValue("@Urgency", urgency);
+                command.Parameters.AddWithValue("@DueDate", dueDate);
+
+                connection.Open();
+                command.ExecuteNonQuery();
+                connection.Close();
+            }
+        }
+
+        private void AddTaskButton_Click(object sender, EventArgs e)
+        {
+            string taskText = newTaskTextBox.Text;
+            string urgency = urgencyComboBox.SelectedItem != null ? urgencyComboBox.SelectedItem.ToString() : string.Empty;
+            DateTime dueDate = dueDateTimePicker.Value;
+
+
+            if (!string.IsNullOrWhiteSpace(taskText) && !string.IsNullOrWhiteSpace(urgency))
+            {
+                InsertTaskIntoDatabase(taskText, urgency, dueDate);
+                DataGridViewRow row = new DataGridViewRow();
+                row.CreateCells(taskDataGridView);
+                row.Cells[0].Value = taskCounter;
+                row.Cells[1].Value = urgency;
+                row.Cells[2].Value = taskText;
+                row.Cells[3].Value = dueDate.ToString("dd.MM.yyyy HH:mm");
+                taskDataGridView.Rows.Add(row);
+
+                newTaskTextBox.Clear();
+                urgencyComboBox.SelectedIndex = -1;
+                dueDateTimePicker.Value = DateTime.Now;
+
+                taskCounter++;
+            }
+
+            else
+            {
+                MessageBox.Show("Пожалуйста, заполните все поля для добавления новой задачи.");
+                return; // Остановить выполнение метода
+            }
+        }
+
+
+        private void AddEmployeeButton_Click(object sender, EventArgs e)
+        {
+            string login = newEmployeeLoginTextBox.Text;
+            string password = newEmployeePasswordTextBox.Text;
+            string name = newEmployeeNameTextBox.Text;
+            string position = newEmployeePositionTextBox.Text;
+
+            if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(position))
+            {
+                MessageBox.Show("Пожалуйста, заполните все поля для добавления нового сотрудника.");
+                return; // Остановить выполнение метода
+            }
+
+            DataGridViewRow row = new DataGridViewRow();
+            row.CreateCells(employeeDataGridView);
+            row.Cells[0].Value = login;
+            row.Cells[1].Value = name;
+            row.Cells[2].Value = position;
+            employeeDataGridView.Rows.Add(row);
+
+            newEmployeeLoginTextBox.Clear();
+            newEmployeePasswordTextBox.Clear();
+            newEmployeeNameTextBox.Clear();
+            newEmployeePositionTextBox.Clear();
+        }
+
+        private void LoadEmployees()
+        {
+            string filePath = "employees.txt";
+            if (File.Exists(filePath))
+            {
+                string[] lines = File.ReadAllLines(filePath);
+                foreach (string line in lines)
+                {
+                    string[] employeeData = line.Split(';');
+                    if (employeeData.Length == 4)
+                    {
+                        string login = employeeData[0];
+                        string name = employeeData[1];
+                        string position = employeeData[2];
+
+                        DataGridViewRow row = new DataGridViewRow();
+                        row.CreateCells(employeeDataGridView);
+                        row.Cells[0].Value = login;
+                        row.Cells[1].Value = name;
+                        row.Cells[2].Value = position;
+                        employeeDataGridView.Rows.Add(row);
+                    }
+                }
+            }
+        }
+    }
+    
+
+    public class Program
+    {
+        [STAThread]
+        public static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.Run(new MainForm());
+        }
+    }
+}
+
+
+
+
+								connection.Open();
+                                string querr = "SELECT * FROM Tasks";
+                                SQLiteCommand command = new SQLiteCommand(querr, connection);
+                                SQLiteDataReader reader = command.ExecuteReader();
+
+                                DataGridView dataGridView = new DataGridView();
+                                dataGridView.Columns.Add("TaskText", "Task Text");
+                                dataGridView.Columns.Add("Urgency", "Urgency");
+                                dataGridView.Columns.Add("DueDate", "Due Date");
+                                dataGridView.Columns.Add("User", "User");
+                                while (reader.Read())
+                                {
+                                    string taskText = reader["TaskText"].ToString();
+                                    string urgency = reader["Urgency"].ToString();
+                                    string dueDate = reader["DueDate"].ToString();
+                                    string user = reader["User"].ToString();
+
+                                    // Добавьте данные в таблицу вашего Windows Form
+                                    // Например, dataGridView.Rows.Add(taskText, urgency, dueDate, user);
+
+                                    DataGridViewRow row = new DataGridViewRow();
+                                    row.CreateCells(dataGridView, taskText, urgency, dueDate, user);
+                                    dataGridView.Rows.Add(taskText, urgency, dueDate, user);
+
+                                }
+								
+								
+								
+								
+								
+								
+								
+				UserComboBox = new ComboBox();
+                UserComboBox.Items.AddRange(new string[] { "Низкий", "Средний", "Высокий" });
+                UserComboBox.Width = 100;
+                UserComboBox.Left = (Width - dueDateTimePicker.Width) / 2;
+                UserComboBox.Top = dueDateTimePicker.Top + dueDateTimePicker.Height + 10;
+				
+				
+				            UserComboBox = new ComboBox();
+            UserComboBox.Items.AddRange(GetAllEmployeeData());
+            UserComboBox.Width = 100;
+            UserComboBox.Left = newTaskTextBox.Left;
+            UserComboBox.Top = dueDateTimePicker.Top + dueDateTimePicker.Height + 10;
+            Controls.Add(UserComboBox);
+			
+			addEmployeeButton = new Button();
+            addEmployeeButton.Text = "Добавить сотрудника";
+            addEmployeeButton.Width = 150;
+            addEmployeeButton.Height = 30;
+            addEmployeeButton.Left = newEmployeePositionTextBox.Left;
+            addEmployeeButton.Top = newEmployeePositionTextBox.Bottom + 10;

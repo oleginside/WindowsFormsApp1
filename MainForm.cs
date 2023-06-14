@@ -7,18 +7,13 @@ namespace SimpleWindowsForm
 {
     public class MainForm : Form
     {
-        //private DatabaseManager databaseManager;
         private SQLiteConnection connection;
-        //private SQLiteConnection connection;
         private Button loginButton;
         private TextBox usernameTextBox;
         private TextBox passwordTextBox;
-        //private ListBox itemListBox;
         private TextBox newTaskTextBox;
         private DataGridView taskDataGridView;
-        //private DataGridView taskGridView;
         private Button addTaskButton;
-        //private Button deleteEmployeeButton;
         private Button addEmployeeButton;
         private Button deleteEmployeeButton;
         private Button deleteTaskButton;
@@ -35,8 +30,7 @@ namespace SimpleWindowsForm
         {
             { "123", "123"}
         };
-
-        private void UpdateEmployeesTable()
+        private void UpdateEmployeesTable()// Функция проверки и замены NULL на "Null"
         {
             string connectionString = "Data Source = Tasks.db; Version = 3;";
             using (SQLiteConnection connection = new SQLiteConnection(connectionString))
@@ -69,23 +63,13 @@ namespace SimpleWindowsForm
                     }
                 }
             }
-        }// Функция проверки и замены NULL на "Null"
-
-
+        }
         private void InitializeDatabase() // Вставка значений из Whitelist в базу данных Employee
         {
             string connectionString = "Data Source=Tasks.db;Version=3;";
             using (SQLiteConnection connection = new SQLiteConnection(connectionString))
             {
                 connection.Open();
-
-                // Создание таблицы Employees (если она не существует)
-                /*                string createTableQuery = "CREATE TABLE IF NOT EXISTS Employees (Id INTEGER PRIMARY KEY AUTOINCREMENT, Login TEXT, Password TEXT, Name TEXT, Position TEXT)";
-                                using (SQLiteCommand createTableCommand = new SQLiteCommand(createTableQuery, connection))
-                                {
-                                    createTableCommand.ExecuteNonQuery();
-                                }*/
-
                 // Вставка записей из словаря whitelist
                 foreach (KeyValuePair<string, string> entry in whitelist)
                 {
@@ -119,17 +103,13 @@ namespace SimpleWindowsForm
                 }
             }
         }
-
         // Счетчик для нумерации задач
         private int taskCounter = 1;
-        //private object dataGridView;
-
         private SQLiteConnection SQLiteConnection() // Подключаемся к нашей базе данных
         {
             connection = new SQLiteConnection("Data Source=Tasks.db;Version=3;");
             return connection;
         }
-
         public void CreateTasksTable() // создание таблицы Tasks
         {
             SQLiteConnection();
@@ -152,13 +132,11 @@ namespace SimpleWindowsForm
 
             connection.Close();
         }
-
         private void UpdateUserComboBox() // Обновление списка сотрудников
         {
             UserComboBox.Items.Clear();
             UserComboBox.Items.AddRange(GetLoginEmployeeData());
         }
-
         private string[] GetLoginEmployeeData()
         {
             List<string> employeeDataList = new List<string>();
@@ -189,7 +167,6 @@ namespace SimpleWindowsForm
 
             return employeeDataList.ToArray();
         }
-
         private string[] GetLoginPasswordEmployeeData()
         {
             List<string> employeeDataList = new List<string>();
@@ -246,11 +223,7 @@ namespace SimpleWindowsForm
 
             // Подключение обработчика события нажатия на кнопку "Войти"
             loginButton.Click += LoginButton_Click;
-
-            // Подключение обработчика событий сочетаний клавиш
-            KeyDown += MainForm_KeyDown;
         }
-
         private void LoginButton_Click(object sender, EventArgs e)
         {
             // Создание и настройка полей для ввода имени пользователя и пароля
@@ -274,7 +247,6 @@ namespace SimpleWindowsForm
             loginButton.Click += LoginButtonWithCredentials_Click;
             loginButton.Text = "Войти с учетными данными";
         }
-
         private string GetEmployeePosition(string username)
         {
             string position = string.Empty;
@@ -326,7 +298,6 @@ namespace SimpleWindowsForm
                 UpdateUserComboBox();
             }
         }
-
         private void CreateDeleteTask()
         {
             deleteTaskButton = new Button();
@@ -358,7 +329,6 @@ namespace SimpleWindowsForm
                 }
             }
         }
-
         private void DeleteTaskButton_Click(object sender, EventArgs e)
         {
             // Получение выбранной строки в таблице
@@ -389,8 +359,6 @@ namespace SimpleWindowsForm
                 }
             }
         }
-
-
         public void CreateTasksFields()
         {
             // Создание и настройка текстового поля и кнопки для добавления задачи
@@ -424,7 +392,6 @@ namespace SimpleWindowsForm
             addTaskButton.Left = newTaskTextBox.Left;
             addTaskButton.Top = UserComboBox.Top + UserComboBox.Height + 10;
 
-
             // Создание таблицы для отображения списка задач
             taskDataGridView = new DataGridView();
             taskDataGridView.Width = 400;
@@ -432,12 +399,6 @@ namespace SimpleWindowsForm
             taskDataGridView.Left = newTaskTextBox.Left;
             taskDataGridView.Top = addTaskButton.Top + addTaskButton.Height + 10;
             taskDataGridView.AutoGenerateColumns = false;
-
-            // Создание столбцов таблицы
-            /*            DataGridViewTextBoxColumn taskNumberColumn = new DataGridViewTextBoxColumn();
-                        taskNumberColumn.Name = "TaskNumber";
-                        taskNumberColumn.HeaderText = "№";
-                        taskNumberColumn.Width = 30;*/
 
             DataGridViewTextBoxColumn taskUrgencyColumn = new DataGridViewTextBoxColumn();
             taskUrgencyColumn.Name = "TaskUrgency";
@@ -481,7 +442,6 @@ namespace SimpleWindowsForm
 
         public void CreateEmployeeFields()
         {
-
             // Создание таблицы для отображения списка сотрудников
             employeeDataGridView = new DataGridView();
             employeeDataGridView.Width = 400;
@@ -629,38 +589,12 @@ namespace SimpleWindowsForm
             Controls.Add(addTaskButton);
             addTaskButton.Click += addTaskButton_Click;
         }
-        /*        private string GetEmployeePosition(string login)
-                {
-                    string position = string.Empty;
-                    string query = "SELECT Position FROM Employees WHERE Login = @Login";
-
-                    SQLiteConnection();
-                    using (SQLiteCommand command = new SQLiteCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@Login", login);
-
-                        connection.Open();
-
-                        using (SQLiteDataReader reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                position = reader.GetString(0);
-                            }
-                        }
-
-                        connection.Close();
-                    }
-
-                    return position;
-                }*/
         private void LoadTasksByUser(string login)
         {
             string query = "SELECT TaskText, Urgency, DueDate FROM Tasks WHERE User = @User";
 
             SQLiteConnection();
-            //string user GetEmployeePosition(login);
-            //MessageBox.Show(login);
+
             using (SQLiteCommand command = new SQLiteCommand(query, connection))
             {
                 command.Parameters.AddWithValue("@User", login);
@@ -711,7 +645,6 @@ namespace SimpleWindowsForm
                 return count > 0;
             }
         }
-
         private void LoginButtonWithCredentials_Click(object sender, EventArgs e)
         {
             string login = usernameTextBox.Text;
@@ -809,7 +742,6 @@ namespace SimpleWindowsForm
                             {
                                 continue; // Пропустить добавление строки, если данные уже существуют
                             }
-
                             DataGridViewRow row = new DataGridViewRow();
                             row.CreateCells(taskDataGridView);
                             row.Cells[0].Value = urgencyValue;
@@ -843,25 +775,19 @@ namespace SimpleWindowsForm
                         // Чтение данных и добавление их в таблицу DataGridView
                         while (reader.Read())
                         {
-                            /*                            if (!reader.IsDBNull(0) && !reader.IsDBNull(1) && !reader.IsDBNull(2))
-                                                        {*/
-                            // Извлечение значений из результата запроса
                             string login = reader.GetString(0);
                             string name = reader.GetString(1);
                             string position = reader.GetString(2);
 
                             // Добавление данных в таблицу DataGridView
                             employeeDataGridView.Rows.Add(login, name, position);
-                            //}
                         }
                     }
                 }
             }
         }
 
-
-
-        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+/*        private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Escape)
             {
@@ -882,8 +808,7 @@ namespace SimpleWindowsForm
                 // Обработка сочетания клавиш Alt + F4
                 // Например, закрытие окна
             }
-            // Добавьте другие обработки клавиш по аналогии
-        }
+        }*/
         private bool IsTaskAlreadyExists(string taskText)
         {
             string query = "SELECT COUNT(*) FROM Tasks WHERE TaskText = @TaskText";
@@ -948,12 +873,9 @@ namespace SimpleWindowsForm
 
             taskCounter++;
         }
-
-
-
         private void InsertEmployeeIntoDatabase(string login, string password, string name, string position)
         {
-            if (IsEmployeeAlreadyExists(login /*,name)*/))
+            if (IsEmployeeAlreadyExists(login))
             {
                 MessageBox.Show("Такой сотрудник уже существует в базе данных.", "Ошибка");
                 return;
@@ -974,7 +896,6 @@ namespace SimpleWindowsForm
             }
             LoadEmployeeFromDatabase();
         }
-
         private void AddEmployeeButton_Click(object sender, EventArgs e)
         {
             string login = newEmployeeLoginTextBox.Text;
